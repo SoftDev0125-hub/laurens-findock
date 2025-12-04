@@ -171,6 +171,73 @@ Improve validation and error handling throughout the application.
 
 ---
 
+## Completed Challenges
+
+This project has completed **3 out of 5** challenges:
+
+### ✅ Challenge 1: Task Assignment UI
+**Status: Completed with Bonus Features**
+
+**Requirements Implemented:**
+- ✅ Multi-select dropdown component in task form with search functionality
+- ✅ Users API endpoint (`GET /api/users`) to fetch list of users
+- ✅ Display assigned users on task cards with avatars/initials
+- ✅ Filter tasks by assignee
+- ✅ Visual indicators for tasks assigned to current user (blue border)
+- ✅ Visual indicators for tasks owned by current user (green border)
+
+**Bonus Features:**
+- ✅ Search/filter users in the assignee selector
+- ✅ Show user roles next to names in the dropdown
+- ✅ Visual indicators for tasks assigned to the current user
+- ✅ Color-coded avatars based on user ID
+
+### ✅ Challenge 2: Task Filtering, Search & Pagination
+**Status: Completed with Bonus Features**
+
+**Requirements Implemented:**
+- ✅ Search functionality (filters by title and description)
+- ✅ Status filter with ability to select multiple statuses
+- ✅ Pagination on backend (limit/offset based)
+- ✅ Pagination controls on frontend (prev/next buttons with page info)
+- ✅ Total task count and current page info display
+- ✅ Filter/search state persisted in URL query parameters
+
+**Bonus Features:**
+- ✅ Sorting options (by date created, title) with ASC/DESC order
+- ✅ "My Tasks" visual indicator (tasks where user is owner or assignee)
+- ✅ Debounced search input for better performance
+
+### ✅ Challenge 5: Input Validation & Error Handling
+**Status: Completed**
+
+**Requirements Implemented:**
+- ✅ Comprehensive validation using `class-validator`:
+  - Email format validation for registration/login
+  - Password strength requirements (min 8 chars, uppercase, lowercase, number)
+  - Task title/description length limits (200/2000 chars)
+- ✅ Custom validation decorators via DTOs
+- ✅ Detailed, user-friendly error messages
+- ✅ Frontend form validation with inline error display
+- ✅ Loading states and network error handling
+- ✅ Form field validation before submission
+- ✅ Edge case handling (duplicate emails, invalid IDs, missing fields)
+
+**Backend Implementation:**
+- Created DTOs (`CreateTaskDto`, `UpdateTaskDto`, `RegisterDto`, `LoginDto`) with validation decorators
+- Validation middleware (`validateDto`) for request validation
+- Global error handler for consistent error responses
+
+**Frontend Implementation:**
+- Client-side form validation with real-time feedback
+- Error message display for API validation errors
+- Character count indicators for text fields
+- Field-level error highlighting
+
+## Additional Setup
+
+No additional setup required beyond the standard setup instructions. The application uses SQLite by default (configured in `.env` files).
+
 ## Submission Guidelines
 
 After completing your challenges:

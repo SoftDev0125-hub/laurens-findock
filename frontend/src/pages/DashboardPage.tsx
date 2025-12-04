@@ -6,11 +6,14 @@ import { uploadFile } from '../api/uploads';
 import { CarouselItem } from '../types/dashboard';
 
 export const DashboardPage = () => {
-  const { data: tasks = [], error, isLoading } = useQuery({
+  const { data: tasksData, error, isLoading } = useQuery({
     queryKey: ['tasks'],
-    queryFn: fetchTasks,
+    queryFn: () => fetchTasks({ limit: 100 }), // Get more tasks for dashboard stats
   });
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  // Extract tasks array from response
+  const tasks = tasksData?.tasks || [];
 
   const carouselItems = useMemo<CarouselItem[]>(() => {
     if (!tasks.length) {

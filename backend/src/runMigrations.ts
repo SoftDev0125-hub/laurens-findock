@@ -1,4 +1,9 @@
 import 'reflect-metadata';
+import dotenv from 'dotenv';
+
+// Load environment variables BEFORE importing modules that depend on them
+dotenv.config();
+
 import { AppDataSource } from './config/data-source';
 
 const run = async () => {

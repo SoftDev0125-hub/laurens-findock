@@ -1,8 +1,44 @@
 import { apiClient } from './client';
 import { Task, TaskInput } from '../types/task';
 
-export const fetchTasks = async (): Promise<Task[]> => {
-  const { data } = await apiClient.get<Task[]>('/tasks');
+export type TaskFilters = {
+  search?: string;
+  status?: string | string[];
+  assigneeId?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: 'title' | 'createdAt';
+  sortOrder?: 'ASC' | 'DESC';
+};
+
+export type TasksResponse = {
+  tasks: Task[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export const fetchTasks = async (filters?: TaskFilters): Promise<TasksResponse> => {
+  const params = new URLSearchParams();
+  
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.status) {
+    if (Array.isArray(filters.status)) {
+      filters.status.forEach((s) => params.append('status', s));
+    } else {
+      params.append('status', filters.status);
+    }
+  }
+  if (filters?.assigneeId) params.append('assigneeId', filters.assigneeId);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+  if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+  if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+
+  const { data } = await apiClient.get<TasksResponse>(`/tasks?${params.toString()}`);
   return data;
 };
 

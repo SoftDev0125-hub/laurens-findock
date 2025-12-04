@@ -2,16 +2,157 @@ import { Request, Response } from 'express';
 import { AppDataSource } from '../config/data-source';
 import { Task } from '../entities/Task';
 import { User } from '../entities/User';
-import { In } from 'typeorm';
+import { In, FindOptionsWhere } from 'typeorm';
+import { AuthTokenPayload } from '../utils/auth';
 
 export class TaskController {
   private taskRepository = AppDataSource.getRepository(Task);
   private userRepository = AppDataSource.getRepository(User);
 
-  list = async (_req: Request, res: Response) => {
+  /**
+   * Permission helpers
+   * - Regular users: can edit/delete only tasks they own
+   * - Managers: can edit any task, delete only tasks they own
+   * - Admins: can edit/delete any task
+   */
+  private hasRole(user: AuthTokenPayload, role: string): boolean {
+    return user.roles.includes(role);
+  }
+
+  private isOwner(user: AuthTokenPayload, task: Task): boolean {
+    return task.owner.id === user.userId;
+  }
+
+  private canEditTask(user: AuthTokenPayload, task: Task): boolean {
+    if (this.hasRole(user, 'admin') || this.hasRole(user, 'manager')) {
+      return true;
+    }
+
+    return this.isOwner(user, task);
+  }
+
+  private canDeleteTask(user: AuthTokenPayload, task: Task): boolean {
+    if (this.hasRole(user, 'admin')) {
+      return true;
+    }
+
+    // Managers and regular users can delete only their own tasks
+    if (this.hasRole(user, 'manager') || this.hasRole(user, 'user')) {
+      return this.isOwner(user, task);
+    }
+
+    return false;
+  }
+
+  list = async (req: Request, res: Response) => {
     try {
-      const tasks = await this.taskRepository.find();
-      return res.json(tasks);
+      const {
+        search = '',
+        status,
+        assigneeId,
+        page = '1',
+        limit = '10',
+        sortBy = 'createdAt',
+        sortOrder = 'DESC',
+      } = req.query;
+
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Build where conditions
+      const where: FindOptionsWhere<Task> = {};
+
+      // Search filter (title and description)
+      if (search) {
+        const searchTerm = `%${search}%`;
+        const queryBuilder = this.taskRepository
+          .createQueryBuilder('task')
+          .leftJoinAndSelect('task.owner', 'owner')
+          .leftJoinAndSelect('task.assignees', 'assignees')
+          .leftJoinAndSelect('task.attachments', 'attachments')
+          .where('task.title LIKE :search OR task.description LIKE :search', {
+            search: searchTerm,
+          });
+
+        // Status filter
+        if (status) {
+          const statusArray = Array.isArray(status) ? status : [status];
+          queryBuilder.andWhere('task.status IN (:...statuses)', {
+            statuses: statusArray,
+          });
+        }
+
+        // Assignee filter
+        if (assigneeId) {
+          queryBuilder.andWhere('assignees.id = :assigneeId', {
+            assigneeId: assigneeId as string,
+          });
+        }
+
+        // Sorting
+        const order = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+        const sortField = sortBy === 'title' ? 'task.title' : 'task.createdAt';
+        queryBuilder.orderBy(sortField, order);
+
+        // Pagination
+        queryBuilder.skip(offset).take(limitNum);
+
+        const [tasks, total] = await queryBuilder.getManyAndCount();
+
+        return res.json({
+          tasks,
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total,
+            totalPages: Math.ceil(total / limitNum),
+          },
+        });
+      } else {
+        // No search, use simpler query
+        if (status) {
+          const statusArray = Array.isArray(status) ? status : [status];
+          where.status = In(statusArray as string[]);
+        }
+
+        const queryBuilder = this.taskRepository
+          .createQueryBuilder('task')
+          .leftJoinAndSelect('task.owner', 'owner')
+          .leftJoinAndSelect('task.assignees', 'assignees')
+          .leftJoinAndSelect('task.attachments', 'attachments');
+
+        if (Object.keys(where).length > 0) {
+          queryBuilder.where(where);
+        }
+
+        // Assignee filter
+        if (assigneeId) {
+          queryBuilder.andWhere('assignees.id = :assigneeId', {
+            assigneeId: assigneeId as string,
+          });
+        }
+
+        // Sorting
+        const order = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+        const sortField = sortBy === 'title' ? 'task.title' : 'task.createdAt';
+        queryBuilder.orderBy(sortField, order);
+
+        // Pagination
+        queryBuilder.skip(offset).take(limitNum);
+
+        const [tasks, total] = await queryBuilder.getManyAndCount();
+
+        return res.json({
+          tasks,
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total,
+            totalPages: Math.ceil(total / limitNum),
+          },
+        });
+      }
     } catch (error) {
       return res.status(500).json({ message: 'Failed to fetch tasks' });
     }
@@ -55,6 +196,10 @@ export class TaskController {
     const { title, description, status, assigneeIds = [] } = req.body;
 
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       if (!taskId) {
         return res.status(400).json({ message: 'Task id is required' });
       }
@@ -62,6 +207,12 @@ export class TaskController {
       const task = await this.taskRepository.findOne({ where: { id: taskId } });
       if (!task) {
         return res.status(404).json({ message: 'Task not found' });
+      }
+
+      if (!this.canEditTask(req.user as AuthTokenPayload, task)) {
+        return res
+          .status(403)
+          .json({ message: 'You do not have permission to edit this task' });
       }
 
       if (title !== undefined) task.title = title;
@@ -85,6 +236,10 @@ export class TaskController {
     const taskId = req.params.id;
 
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       if (!taskId) {
         return res.status(400).json({ message: 'Task id is required' });
       }
@@ -92,6 +247,12 @@ export class TaskController {
       const task = await this.taskRepository.findOne({ where: { id: taskId } });
       if (!task) {
         return res.status(404).json({ message: 'Task not found' });
+      }
+
+      if (!this.canDeleteTask(req.user as AuthTokenPayload, task)) {
+        return res
+          .status(403)
+          .json({ message: 'You do not have permission to delete this task' });
       }
 
       await this.taskRepository.remove(task);

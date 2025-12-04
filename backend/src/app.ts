@@ -21,6 +21,15 @@ export const createApp = () => {
     res.json({ status: 'ok' });
   });
 
+  // Global error handler
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('Error:', err);
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    return res.status(500).json({ message: 'Internal server error' });
+  });
+
   return app;
 };
 
