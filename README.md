@@ -234,6 +234,23 @@ This project has completed **3 out of 5** challenges:
 - Character count indicators for text fields
 - Field-level error highlighting
 
+## Additional Work
+
+### 🔧 Challenge 3: Enhanced RBAC & Task Permissions (Core Logic Implemented)
+
+- Implemented task-level RBAC in the backend `TaskController`:
+  - Regular users can only edit/delete tasks they own
+  - Managers can edit any task but only delete their own
+  - Admins can edit/delete any task
+- Added helper methods to encapsulate permission checks and return clear 403 errors when access is denied
+- Updated frontend task list and pages to hide edit/delete buttons based on user role and ownership, and to surface permission error messages from the API
+
+### 🔧 Challenge 4: Task Detail View & Comments (Backend Foundations)
+
+- Added `TaskComment` entity and wired relations to `Task` and `User` for future comments functionality
+- Updated data source configuration to include the new entity
+- This lays the groundwork for a `/tasks/:id` detail page with a comments section as described in the challenge
+
 ## Additional Setup
 
 No additional setup required beyond the standard setup instructions. The application uses SQLite by default (configured in `.env` files).

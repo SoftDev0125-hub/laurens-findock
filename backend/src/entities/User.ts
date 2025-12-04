@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Role } from './Role';
 import { Task } from './Task';
+import { TaskComment } from './TaskComment';
 
 @Entity()
 export class User {
@@ -37,6 +38,9 @@ export class User {
 
   @ManyToMany(() => Task, (task) => task.assignees)
   assignedTasks!: Task[];
+
+  @OneToMany(() => TaskComment, (comment) => comment.author)
+  comments!: TaskComment[];
 
   @CreateDateColumn()
   createdAt!: Date;

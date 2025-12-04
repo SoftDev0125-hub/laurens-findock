@@ -5,9 +5,10 @@ import { User } from '../entities/User';
 import { Role } from '../entities/Role';
 import { Task } from '../entities/Task';
 import { TaskAttachment } from '../entities/TaskAttachment';
+import { TaskComment } from '../entities/TaskComment';
 import { InitSchema1700000000000 } from '../migrations/1700000000000-InitSchema';
 
-const entities = [User, Role, Task, TaskAttachment];
+const entities = [User, Role, Task, TaskAttachment, TaskComment];
 const migrations = [InitSchema1700000000000];
 
 const dbType = (process.env.DB_TYPE || 'postgres').toLowerCase();

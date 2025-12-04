@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { User } from './User';
 import { TaskAttachment } from './TaskAttachment';
+import { TaskComment } from './TaskComment';
 
 @Entity()
 export class Task {
@@ -38,6 +39,11 @@ export class Task {
     eager: true,
   })
   attachments!: TaskAttachment[];
+
+  @OneToMany(() => TaskComment, (comment) => comment.task, {
+    cascade: true,
+  })
+  comments!: TaskComment[];
 
   @CreateDateColumn()
   createdAt!: Date;
